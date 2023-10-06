@@ -1,14 +1,20 @@
 export enum type {
     INT     = 'int',
-    STRING  = 'string',
-    BOOLEAN = 'boolean'
+    DOUBLE  = 'double',
+    DATE    = 'date',
+    VARCHAR = 'varchar',
+    TRUE    = 'true',
+    FALSE   = 'false',
+    NULL    = 'null'
+
 }
 
 export enum arithmeticOperator {
     PLUS    = '+',
     MINUS   = '-',
     MULT    = '*',
-    DIV     = '/'
+    DIV     = '/',
+    MOD     = '%'
 }
 
 export enum relationalOperator {

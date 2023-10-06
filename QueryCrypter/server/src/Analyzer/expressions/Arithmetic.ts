@@ -16,7 +16,7 @@ export class Arithmetic implements Instruction {
     public row: number;
     public column: number;
 
-    constructor(exp1: Instruction, exp2: Instruction, operator: string, row: number, column: number) {
+    constructor(exp1: Instruction, exp2: Instruction, operator: string, row: any, column: any = null) {
         this.exp1 = exp1;
         this.exp2 = exp2;
         this.operator = operator;
@@ -42,8 +42,8 @@ export class Arithmetic implements Instruction {
             return right;
         }
 
-        switch(this.operator) {
-            case "+": 
+        switch (this.operator) {
+            case "+":
                 return new ReturnType(type.INT, Number(left.value) + Number(right.value));
             case "-":
                 return new ReturnType(type.INT, Number(left.value) - Number(right.value));
@@ -51,12 +51,14 @@ export class Arithmetic implements Instruction {
                 return new ReturnType(type.INT, Number(left.value) * Number(right.value));
             case "/":
                 return Number(right.value) === 0 ? new ReturnType(type.INT, new Exception("Semantic", `Can't divide for 0`, this.row, this.column, table.name)) : new ReturnType(type.INT, Number(left.value) / Number(right.value));
+            case "%":
+                return new ReturnType(type.INT, Number(left.value) % Number(right.value));
             default:
                 return new ReturnType(type.INT, new Exception("Semantic", `The operator: ${this.operator} not is valid`, this.row, this.column, table.name));
         }
     }
 
-    interpret(): any{
+    interpret(): any {
 
     }
 

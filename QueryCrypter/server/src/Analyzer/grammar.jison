@@ -5,10 +5,10 @@
 %{
     // Importations
     import { type, arithmeticOperator, relationalOperator } from "./tools/Type.js";
-    import { Arithmetic } from './expression/Arithmetic.js';
-    import { Relational } from './expression/Relational.js';
-    import Primitive from './expression/Primitive.js';
-    import { Identifier } from './expression/Identifier.js';
+    import { Arithmetic } from './expressions/Arithmetic.js';
+    import { Relational } from './expressions/Relational.js';
+    import Primitive from './expressions/Primitive.js';
+    import { Identifier } from './expressions/Identifier.js';
     import { Print } from './instructions/Print.js';
     import { Declaration } from './instructions/Declaration.js';
     import { If } from './instructions/If.js';
@@ -32,49 +32,131 @@
 
 %%
 
-\s+                         // Spaces Ignored
-"//".*                      // Comment inline
+// elementos a ignorar
+\s+                                 // espacios
+"--".*                              // comentario de una linea
+\/\*[^*]*\*+([^/*][^*]*\*+)*\/      // comentario de varias líneas
 
 /*------------------------ Reserved Words ------------------------*/
 
+// tipos de datos
 "int"                       return "res_int";
-"boolean"                   return "res_boolean";
-"string"                    return "res_string";
-
-"if"                        return "res_if";
-"else"                      return "res_else";
-"print"                     return "res_print";
-
+"double"                    return "res_double";
+"date"                      return "res_date";
+"varchar"                   return "res_varchar";
 "true"                      return "res_true";
 "false"                     return "res_false";
+"null"                      return "res_null";
 
+
+// encapsular sentencias
+"begin"                     return "res_begin";
+"end"                       return "res_end";
+
+// declarar variables
+"declare"                   return "res_declare";
+
+// asignar valor de variable
+"set"                       return "res_set";
+
+
+/*------------------------ DDL ------------------------*/
+"table"                     return "res_table";
+"create"                    return "res_create";
+"alter"                     return "res_alter";
+"add"                       return "res_add";
+"drop"                      return "res_drop";
+"column"                    return "res_column";
+"rename"                    return "res_rename";
+"to"                        return "res_to";
+
+
+/*------------------------ DML ------------------------*/
+"insert"                    return "res_insert";
+"into"                      return "res_into";
+"values"                    return "res_values";
+"select"                    return "res_select";
+"from"                      return "res_from";
+"where"                     return "res_where";
+"as"                        return "res_as";
+"update"                    return "res_update";
+"truncate"                  return "res_truncate";
+"delete"                    return "res_delete";
+
+/*------------------------ Casteo de datos ------------------------*/
+"cast"                      return "res_cast";
+
+/*------------------------ Sentencias de control ------------------------*/
+//if
+"if"                        return "res_if";
+"else"                      return "res_else";
+//case
+"case"                      return "res_case";
+"when"                      return "res_when";
+"then"                      return "res_then";
+/*------------------------ Sentencias ciclicas ------------------------*/
+//while
+"while"                     return "res_while";
+//for
+"for"                       return "res_for";
+"in"                        return "res_in";
+/*------------------------ Sentencias de transferencia ------------------------*/
+"break"                     return "res_break";
+"continue"                  return "res_continue";
+
+/*------------------------ funciones ------------------------*/
+"function"                  return "res_function";
+"returns"                   return "res_returns";
+"return"                    return "res_return";
+/*------------------------ Metodos ------------------------*/
+"procedure"                 return "res_procedure";
+
+/*------------------------ funciones nativas ------------------------*/
+"print"                     return "res_print";
+"lower"                     return "res_lower";
+"upper"                     return "res_upper";
+"round"                     return "res_round";
+"length"                    return "res_length";
+"truncate"                  return "res_truncate";
+"typeof"                    return "res_typeof";
 
 /*------------------------ Tokens ------------------------*/
 
+// signos de agrupacion
 "("                         return "tk_par_left";
 ")"                         return "tk_par_right";
 "{"                         return "tk_bra_left";
 "}"                         return "tk_bra_right";
 ";"                         return "tk_semicolon";
 
+// operadores aritmeticos
 "+"                         return "tk_plus";
 "-"                         return "tk_minus";
 "*"                         return "tk_mult";
 "/"                         return "tk_div";
+"%"                         return "tk_mod";
 
+// operadores relacionales
 "=="                        return "tk_eq";
 "!="                        return "tk_neq";
 "<="                        return "tk_lte";
 ">="                        return "tk_gte";
 "<"                         return "tk_lt";
 ">"                         return "tk_gt";
-
 "="                         return "tk_assign";
+
+//operadores logicos
+"AND"                       return "tk_and";
+"OR"                        return "tk_or";
+"NOT"                       return "tk_not";
+
+//asignacion de variables
+"@"                         return "tk_arroba";
 
 [ \r\t]+                    {}
 \n                          {}
 
-\"[^\"]*\"                  { yytext = yytext.substr(1, yyleng-2); return 'STRING'; }
+\"[^\"]*\"                  { yytext = yytext.substr(1, yyleng-2); return 'VARCHAR'; }
 
 [0-9]+\b                    return 'INTEGER';
 [a-zA-Z][a-zA-Z0-9]*        return 'IDENTIFIER';
@@ -86,10 +168,12 @@
 /lex
 
 /*------------------------ Operators Precedence ------------------------*/
-
-%nonassoc 'tk_eq' 'tk_neq' 'tk_lt' 'tk_lte' 'tk_gt' 'tk_gte'
-%left 'tk_plus' 'tk_minus'
-%left 'tk_mult' 'tk_div'
+%left   'tk_div' 'tk_mult'
+%left   'tk_plus' 'tk_minus'
+%left   'tk_eq' 'tk_neq' 'tk_lt' 'tk_lte' 'tk_gt' 'tk_gte'
+%right  'tk_not'
+%left   'tk_and'
+%left   'tk_or'
 
 
 /*------------------------ Grammar Definition ------------------------*/
@@ -105,45 +189,16 @@
                  | instruction                                          { $$ = $1 === null ? [] : [$1]; }
     ;
 
-    instruction : declaration tk_semicolon                              { $$ = $1; }
-                | print tk_semicolon                                    { $$ = $1; }
-                | if                                                    { $$ = $1; }
+    instruction : print tk_semicolon                                    { $$ = $1; }
                 | error tk_semicolon                                    { errors.push(`Sintactic error ${yytext} in [${this._$.first_line}, ${this._$.first_column}]`); $$ = null; }
     ;
 
-    declaration : type IDENTIFIER tk_assign expression                  { $$ = new Declaration($1, $2, $4, @1.first_line, @1.first_column); }
+    
+    print : res_print expression                                        { $$ = new Print($2, @1.first_line, @1.first_column); }
     ;
 
-    print : res_print tk_par_left expression tk_par_right               { $$ = new Print($3, @1.first_line, @1.first_column); }
-    ;
-
-    if : res_if tk_par_left expression tk_par_right tk_bra_left instructions tk_bra_right                                                                           { $$ = new If($3, $6, undefined, undefined, @1.first_line, @1.first_column); }
-       | res_if tk_par_left expression tk_par_right tk_bra_left instructions tk_bra_right res_else tk_bra_left instructions tk_bra_right                            { $$ = new If($3, $6, $10, undefined, @1.first_line, @1.first_column); }
-       | res_if tk_par_left expression tk_par_right tk_bra_left instructions tk_bra_right res_else if                                                               { $$ = new If($3, $6, undefined, $9, @1.first_line, @1.first_column); }
-    ;
-
-    type : res_int                                                      { $$ = type.INT; }
-         | res_boolean                                                  { $$ = type.BOOLEAN; }
-         | res_string                                                   { $$ = type.STRING; }
-    ;
-
-    expression : expression tk_plus expression                          { $$ = new Arithmetic($1, $3, arithmeticOperator.PLUS, @1.first_line, @1.first_column); }
-               | expression tk_minus expression                         { $$ = new Arithmetic($1, $3, arithmeticOperator.MINUS, @1.first_line, @1.first_column); }
-               | expression tk_mult expression                          { $$ = new Arithmetic($1, $3, arithmeticOperator.MULT, @1.first_line, @1.first_column); }
-               | expression tk_div expression                           { $$ = new Arithmetic($1, $3, arithmeticOperator.DIV, @1.first_line, @1.first_column); }
-               | expression tk_eq expression                            { $$ = new Relational($1, $3, relationalOperator.EQ, @1.first_line, @1.first_column); }
-               | expression tk_neq expression                           { $$ = new Relational($1, $3, relationalOperator.NEQ, @1.first_line, @1.first_column); }
-               | expression tk_lte expression                           { $$ = new Relational($1, $3, relationalOperator.LTE, @1.first_line, @1.first_column); }
-               | expression tk_gte expression                           { $$ = new Relational($1, $3, relationalOperator.GTE, @1.first_line, @1.first_column); }
-               | expression tk_lt expression                            { $$ = new Relational($1, $3, relationalOperator.LT, @1.first_line, @1.first_column); }
-               | expression tk_gt expression                            { $$ = new Relational($1, $3, relationalOperator.GT, @1.first_line, @1.first_column); }
-               | IDENTIFIER                                             { $$ = new Identifier($1, @1.first_line, @1.first_column); }
-               | STRING                                                 { $$ = new Primitive($1, type.STRING, @1.first_line, @1.first_column); }
+    expression : IDENTIFIER                                             { $$ = new Identifier($1, @1.first_line, @1.first_column); }
+               | VARCHAR                                                { $$ = new Primitive($1, type.VARCHAR, @1.first_line, @1.first_column); }
                | INTEGER                                                { $$ = new Primitive($1, type.INT, @1.first_line, @1.first_column); }
-               | boolean                                                { $$ = new Primitive($1, type.BOOLEAN, @1.first_line, @1.first_column); }
                | tk_par_left expression tk_par_right                    { $$ = $2; }
-    ;
-
-    boolean : res_true      { $$ = $1; }
-            | res_false     { $$ = $1; }
     ;

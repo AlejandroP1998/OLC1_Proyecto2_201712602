@@ -3,7 +3,7 @@ import Tree from "../Analyzer/tools/Tree.js";
 import Environment from "../Analyzer/tools/Environment.js";
 import { Instruction } from "../Analyzer/abstract/Instruction.js";
 // @ts-ignore
-import { grammar, errors, clean_errors } from '../Analyzer/grammar.js'
+import { grammar, errors, clean_errors } from '../../dist/Analyzer/grammar.js'
 import { Node } from "../Analyzer/abstract/Node.js";
 
 interface outParse {
@@ -14,7 +14,7 @@ interface outParse {
 
 export const analyze = (req: Request, res: Response) => {
     const { code } =  req.body;
-
+    //console.log(code);
     let out = interpret(code);
 
     res.json({
@@ -31,8 +31,9 @@ const interpret = (bufferStrem: string): outParse => {
     let instructions: Array<Instruction>;
 
     clean_errors();
-
+    console.log('bufferStrem -> ',bufferStrem)
     instructions = grammar.parse(bufferStrem);
+    console.log(instructions)
     
     tree = new Tree(instructions);
     globalTable = new Environment(undefined, undefined);

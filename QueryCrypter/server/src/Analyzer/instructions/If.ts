@@ -39,45 +39,7 @@ export class If implements Instruction {
             return flag;
         }
 
-        if (flag.type === type.BOOLEAN) {
-            if (JSON.parse(String(flag.value))) {
-
-                let newTable = new Environment(table, `If-${this.row}-${this.column}`);
-                let instruction: any;
-
-                for (let item of this.instructions) {
-                    instruction = item.interpret(tree, newTable);
-
-                    if (instruction instanceof Exception) {
-                        // Semantic Error
-                        tree.errors.push(instruction);
-                        tree.updateConsole(instruction.toString());
-                    }
-                }
-            } else if (this.elseInstructions !== undefined ){
-                let newTable = new Environment(table, `Else-${this.row}-${this.column}`);
-                let instruction: any;
-
-                for (let item of this.elseInstructions) {
-                    instruction = item.interpret(tree, newTable);
-
-                    if (instruction instanceof Exception) {
-                        // Semantic Error
-                        tree.errors.push(instruction);
-                        tree.updateConsole(instruction.toString());
-                    }
-                }
-            } else if (this.elseIf !== undefined) {
-                let result: any = this.elseIf.interpret(tree, table);
-
-                if (result instanceof Exception) {
-                    // Semantic Error
-                    return result;
-                }
-            }
-        } else {
-            return new Exception("Semantic", `Expect a boolean type expression. Not ${flag.type}`, this.row, this.column, table.name);
-        }
+        
     }
 
     getCST(): Node {

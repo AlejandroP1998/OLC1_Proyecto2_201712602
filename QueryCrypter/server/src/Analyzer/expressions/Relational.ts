@@ -41,7 +41,7 @@ export class Relational implements Instruction {
         }
 
         if (Object.values(relationalOperator).includes(this.operator)) {
-            return new ReturnType(type.BOOLEAN, this.operate(Number(left.value), Number(right.value), this.operator));
+            return new ReturnType(type.TRUE, this.operate(Number(left.value), Number(right.value), this.operator));
         } else {
             // Semantic Error
             return new ReturnType(type.INT, new Exception("Semantic", `The operator: ${this.operator} not be a relational operator`, this.row, this.column, table.name));

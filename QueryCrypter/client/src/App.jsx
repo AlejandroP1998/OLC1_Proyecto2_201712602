@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React ,{ useState } from 'react'
 import CodeMirror from '@uiw/react-codemirror';
 import { oneDarkTheme } from '@uiw/react-codemirror';
-import { javaLanguage } from '@codemirror/lang-java';
+import { langs } from '@uiw/codemirror-extensions-langs';
 import fileDownload from 'js-file-download';
 import './App.css'
 
@@ -13,12 +13,13 @@ function App() {
   const [cst, setCst] = useState('');
   const [ast, setAst] = useState('');
   const [files, setFiles] = useState([]);
+
   const onChange = React.useCallback((value) => {
     setCode(value);
   }, []);
 
-
   const handleClick = () => {
+    //console.log(code);
     fetch('http://localhost:3000/analyze', {
       headers: {
         'Content-Type': 'application/json'
@@ -50,6 +51,10 @@ function App() {
     const newFiles = Array.from(uploadedFiles);
     setFiles(newFiles);
   };
+
+  const deleteW = () =>{
+    files.splice(files.length-1,1);
+  }
 
   const loadFileContent = (file) => {
     const reader = new FileReader();
@@ -88,6 +93,7 @@ function App() {
         <input type="file" onChange={handleFileUpload} multiple />
         <button onClick={createNewFile}>Crear Nuevo Archivo</button>
         <button onClick={saveToFile}>Guardar en Archivo Existente</button>
+        <button onClick={deleteW}>Eliminar pestaña</button>
       </div>
 
       <div className="file-buttons">
@@ -104,12 +110,9 @@ function App() {
           width='100%'
           height='100%'
           theme={oneDarkTheme}
-          extensions={[javaLanguage]}
-          onChange={onChange}
           value={code}
-          onBeforeChange={(editor, data, value) => {
-            setCode(value);
-          }}
+          onChange={onChange}
+          extensions={[langs.sql()]}
         />
 
         <CodeMirror

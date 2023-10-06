@@ -13,6 +13,7 @@ export class Print implements Instruction {
     public column: number;
 
     constructor(expression: Instruction, row: number, column: number) {
+        console.log("llegue")
         this.expression = expression;
         this.row = row;
         this.column = column;
