@@ -18,11 +18,29 @@
 %{
     // Variables definition and functions
 
-    let errors = [];
+    export let errors = [];
 
-    const clean_errors = () => {
+    export const clean_errors = () => {
         errors = [];
     }
+
+    let globals = [];
+
+    function varG(nombre, tipo, valor) {
+        this.nombre = nombre;
+        this.tipo = tipo;
+        this.valor = valor===null?"":valor;
+    }
+
+    function searchG(nombre,valor){
+        const b = globals.find( vari => vari.nombre === nombre);
+        if(b){
+            b.valor = valor;
+        }
+    }
+
+    let a;
+
 %}
 
 /*------------------------ Lexical Definition ------------------------*/
@@ -34,6 +52,7 @@
 
 // elementos a ignorar
 \s+                                 // espacios
+[ \t\r\n\f]                         /* Ignorar espacios en blanco */
 "--".*                              // comentario de una linea
 \/\*[^*]*\*+([^/*][^*]*\*+)*\/      // comentario de varias líneas
 
@@ -58,6 +77,7 @@
 
 // asignar valor de variable
 "set"                       return "res_set";
+"default"                   return "res_default";
 
 
 /*------------------------ DDL ------------------------*/
@@ -152,6 +172,7 @@
 
 //asignacion de variables
 "@"                         return "tk_arroba";
+","                         return "tk_coma";
 
 [ \r\t]+                    {}
 \n                          {}
@@ -168,11 +189,17 @@
 /lex
 
 /*------------------------ Operators Precedence ------------------------*/
+//nivel 1
 %left   'tk_div' 'tk_mult'
+//nivel 2
 %left   'tk_plus' 'tk_minus'
+//nivel 3
 %left   'tk_eq' 'tk_neq' 'tk_lt' 'tk_lte' 'tk_gt' 'tk_gte'
+//nivel 4
 %right  'tk_not'
+//nivel 5
 %left   'tk_and'
+//nivel 6
 %left   'tk_or'
 
 
@@ -182,23 +209,67 @@
 
 %%
 
-    ini : instructions EOF                                              { return $1; }
+    ini : 
+        instructions EOF                                            { return $1; }
     ;
 
-    instructions : instructions instruction                             { $1.push($2); $$ = $1; }
-                 | instruction                                          { $$ = $1 === null ? [] : [$1]; }
+    instructions : 
+        instructions instruction                                    { $1.push($2); $$ = $1; }
+        | instruction                                               { $$ = $1 === null ? [] : [$1]; }
     ;
 
-    instruction : print tk_semicolon                                    { $$ = $1; }
-                | error tk_semicolon                                    { errors.push(`Sintactic error ${yytext} in [${this._$.first_line}, ${this._$.first_column}]`); $$ = null; }
+    instruction : 
+        declaraciones                                               { $$ = $1; }
+        | error tk_semicolon                                        { errors.push(`Sintactic error ${yytext} in [${this._$.first_line}, ${this._$.first_column}]`); $$ = null; }
     ;
 
-    
-    print : res_print expression                                        { $$ = new Print($2, @1.first_line, @1.first_column); }
+    declaraciones : 
+        encapsular                                                  { $$ = $1; }
+        | declaracion                                               { $$ = $1; }
     ;
 
-    expression : IDENTIFIER                                             { $$ = new Identifier($1, @1.first_line, @1.first_column); }
-               | VARCHAR                                                { $$ = new Primitive($1, type.VARCHAR, @1.first_line, @1.first_column); }
-               | INTEGER                                                { $$ = new Primitive($1, type.INT, @1.first_line, @1.first_column); }
-               | tk_par_left expression tk_par_right                    { $$ = $2; }
+    encapsular : 
+        res_begin declaracion res_end tk_semicolon                  { $$ = $2; }
+    ;
+
+    declaracion : 
+        print tk_semicolon                                          { $$ = $1; }
+        | res_declare asignaciones tk_semicolon                     { $$ = $2; console.log(globals); }
+        | llamada tk_semicolon                                      { $$ = $1; console.log(globals); }
+    ;
+
+
+    asignaciones :
+        asignaciones tk_coma asignacion                             { $1.push($3); $$ = $1; }
+        | asignacion                                                { $$ = $1 === null ? [] : [$1]; }
+    ;
+
+    asignacion : 
+        tk_arroba IDENTIFIER tipos                                  { $$ = $2; a = new varG($2, $3,null); globals.push(a);}
+        | tk_arroba IDENTIFIER tipos res_default expression         { $$ = $2; a = new varG($2, $3, $5);  globals.push(a);}
+    ;
+
+    llamada :
+        res_set tk_arroba IDENTIFIER tk_assign expression           { $$ = $3; searchG($3,$5); }
+    ;
+
+    print : 
+        res_print expression                                        { $$ = new Print($2, @1.first_line, @1.first_column); }
+    ;
+
+    tipos :
+        res_int                                                     { $$ = $1; }
+        | res_double                                                { $$ = $1; }
+        | res_date                                                  { $$ = $1; }
+        | res_varchar                                               { $$ = $1; }
+        | res_true                                                  { $$ = $1; }
+        | res_false                                                 { $$ = $1; }
+        | res_null                                                  { $$ = $1; }
+    ;
+
+    expression : 
+        IDENTIFIER                                                  { $$ = new Identifier($1, @1.first_line, @1.first_column); }
+        | VARCHAR                                                   { $$ = new Primitive($1, type.VARCHAR, @1.first_line, @1.first_column); }
+        | INTEGER                                                   { $$ = new Primitive($1, type.INT, @1.first_line, @1.first_column); }
+        | tk_par_left expression tk_par_right                       { $$ = $2; }
     ;

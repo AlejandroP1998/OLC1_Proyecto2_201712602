@@ -16,6 +16,10 @@
   color: #007bff;
 }
 
+.file-buttons button{
+  background-color: #007bff;
+}
+
 
 .editors {
   display: flex;

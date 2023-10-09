@@ -31,9 +31,9 @@ const interpret = (bufferStrem: string): outParse => {
     let instructions: Array<Instruction>;
 
     clean_errors();
-    console.log('bufferStrem -> ',bufferStrem)
+    //console.log('bufferStrem -> ',bufferStrem)
     instructions = grammar.parse(bufferStrem);
-    console.log(instructions)
+    //console.log(instructions)
     
     tree = new Tree(instructions);
     globalTable = new Environment(undefined, undefined);
