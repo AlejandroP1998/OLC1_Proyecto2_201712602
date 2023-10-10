@@ -1,7 +1,7 @@
 import React ,{ useState } from 'react'
 import CodeMirror from '@uiw/react-codemirror';
 import { oneDarkTheme } from '@uiw/react-codemirror';
-import { langs } from '@uiw/codemirror-extensions-langs';
+import { abyss } from '@uiw/codemirror-theme-abyss'; import { langs } from '@uiw/codemirror-extensions-langs';
 import fileDownload from 'js-file-download';
 import './App.css'
 
@@ -109,7 +109,7 @@ function App() {
           className='cm1'
           width='100%'
           height='100%'
-          theme={oneDarkTheme}
+          theme={ abyss }
           value={code}
           onChange={onChange}
           extensions={[langs.sql()]}

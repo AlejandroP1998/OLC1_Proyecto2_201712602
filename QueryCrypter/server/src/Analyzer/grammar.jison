@@ -10,6 +10,12 @@
     import Primitive from './expressions/Primitive.js';
     import { Identifier } from './expressions/Identifier.js';
     import { Print } from './instructions/Print.js';
+    import { Lower } from './instructions/Lower.js';
+    import { Upper } from './instructions/Upper.js';
+    import { Round } from './instructions/Round.js';
+    import { Len } from './instructions/Len.js';
+    import { Truncate } from './instructions/Truncate.js';
+    import { Typeof } from './instructions/Typeof.js';
     import { Declaration } from './instructions/Declaration.js';
     import { If } from './instructions/If.js';
 
@@ -26,6 +32,8 @@
 
     let globals = [];
 
+    let a;
+
     function varG(nombre, tipo, valor) {
         this.nombre = nombre;
         this.tipo = tipo;
@@ -39,7 +47,10 @@
         }
     }
 
-    let a;
+    function parseDate(dateString) {
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day); // Meses en JavaScript comienzan desde 0 (enero).
+    }
 
 %}
 
@@ -136,7 +147,7 @@
 "lower"                     return "res_lower";
 "upper"                     return "res_upper";
 "round"                     return "res_round";
-"length"                    return "res_length";
+"len"                       return "res_length";
 "truncate"                  return "res_truncate";
 "typeof"                    return "res_typeof";
 
@@ -173,14 +184,16 @@
 //asignacion de variables
 "@"                         return "tk_arroba";
 ","                         return "tk_coma";
+"."                         return "tk_punto";
 
 [ \r\t]+                    {}
 \n                          {}
 
-\"[^\"]*\"                  { yytext = yytext.substr(1, yyleng-2); return 'VARCHAR'; }
 
 [0-9]+\b                    return 'INTEGER';
 [a-zA-Z][a-zA-Z0-9]*        return 'IDENTIFIER';
+\"[^\"]*\"                  { yytext = yytext.substr(1, yyleng-2); return 'VARCHAR'; }
+\'[^\']*\'                  { yytext = yytext.substr(1, yyleng-2); return 'VARCHAR'; }
 
 <<EOF>>                     return 'EOF';
 
@@ -219,42 +232,114 @@
     ;
 
     instruction : 
-        declaraciones                                               { $$ = $1; }
+        reglas                                                      { $$ = $1; }
         | error tk_semicolon                                        { errors.push(`Sintactic error ${yytext} in [${this._$.first_line}, ${this._$.first_column}]`); $$ = null; }
     ;
 
-    declaraciones : 
+    reglas : 
         encapsular                                                  { $$ = $1; }
-        | declaracion                                               { $$ = $1; }
+        | regla                                                     { $$ = $1; }
     ;
 
     encapsular : 
-        res_begin declaracion res_end tk_semicolon                  { $$ = $2; }
+        res_begin regla res_end tk_semicolon                        { $$ = $2; }
+    ;
+
+    regla : 
+        funcionesNativas                                            { $$ = $1; }
+        | res_declare declaraciones tk_semicolon                    { $$ = $2; }
+        | asignacion tk_semicolon                                   { $$ = $1; }
+    ;
+
+    methodsDDL :
+        createDDL
+        | alterDDL
+        | dropDDL
+    ;
+
+    methodsDML :
+        insertDML
+        | selectDML
+        | updateDML
+        | truncateDML
+        | deleteDML
+    ;
+
+    casteos :
+    ;
+
+    sentenciasGenerales :
+        if
+        | case
+        | while
+        | for
+    ;
+
+    funciones :
+
+    ;
+
+    metodos :
+    ;
+
+    llamadas :
+    ;
+    
+
+    declaraciones :
+        declaraciones tk_coma declaracion                           { $1.push($3); $$ = $1; }
+        | declaracion                                               { $$ = $1 === null ? [] : [$1]; }
     ;
 
     declaracion : 
-        print tk_semicolon                                          { $$ = $1; }
-        | res_declare asignaciones tk_semicolon                     { $$ = $2; console.log(globals); }
-        | llamada tk_semicolon                                      { $$ = $1; console.log(globals); }
-    ;
-
-
-    asignaciones :
-        asignaciones tk_coma asignacion                             { $1.push($3); $$ = $1; }
-        | asignacion                                                { $$ = $1 === null ? [] : [$1]; }
-    ;
-
-    asignacion : 
         tk_arroba IDENTIFIER tipos                                  { $$ = $2; a = new varG($2, $3,null); globals.push(a);}
         | tk_arroba IDENTIFIER tipos res_default expression         { $$ = $2; a = new varG($2, $3, $5);  globals.push(a);}
     ;
 
-    llamada :
+    asignacion :
         res_set tk_arroba IDENTIFIER tk_assign expression           { $$ = $3; searchG($3,$5); }
+    ;
+
+    funcionesNativas:
+        print tk_semicolon                                          { $$ = $1; }
+        | lower tk_semicolon                                        { $$ = $1; }
+        | upper tk_semicolon                                        { $$ = $1; }
+        | round tk_semicolon                                        { $$ = $1; }
+        | length tk_semicolon                                       { $$ = $1; }
+        | truncate tk_semicolon                                     { $$ = $1; }
+        | typeof tk_semicolon                                       { $$ = $1; }
     ;
 
     print : 
         res_print expression                                        { $$ = new Print($2, @1.first_line, @1.first_column); }
+    ;
+
+    lower :
+        res_select res_lower tk_par_left expression tk_par_right       
+                                                                    { $$ = new Lower($4, @1.first_line, @1.first_column); }
+    ;
+
+    upper :
+        res_select res_upper tk_par_left expression tk_par_right       
+                                                                    { $$ = new Upper($4, @1.first_line, @1.first_column); }
+    ;
+
+    round :
+        res_select res_round tk_par_left expression tk_coma INTEGER tk_par_right    
+                                                                    { $$ = new Round($4,$6, @1.first_line, @1.first_column); }
+    ;
+
+    length :
+        res_select res_length tk_par_left expression tk_par_right   { $$ = new Len($4, @1.first_line, @1.first_column); }
+    ;
+
+    truncate :
+        res_select res_truncate tk_par_left expression tk_coma INTEGER tk_par_right
+                                                                    { $$ = new Truncate($4,$6, @1.first_line, @1.first_column); }
+    ;
+
+    typeof :
+        res_select res_typeof tk_par_left expression tk_par_right   { $$ = new Typeof($4, @1.first_line, @1.first_column); }
     ;
 
     tipos :
@@ -262,8 +347,7 @@
         | res_double                                                { $$ = $1; }
         | res_date                                                  { $$ = $1; }
         | res_varchar                                               { $$ = $1; }
-        | res_true                                                  { $$ = $1; }
-        | res_false                                                 { $$ = $1; }
+        | res_boolean                                               { $$ = $1; }
         | res_null                                                  { $$ = $1; }
     ;
 
@@ -271,5 +355,7 @@
         IDENTIFIER                                                  { $$ = new Identifier($1, @1.first_line, @1.first_column); }
         | VARCHAR                                                   { $$ = new Primitive($1, type.VARCHAR, @1.first_line, @1.first_column); }
         | INTEGER                                                   { $$ = new Primitive($1, type.INT, @1.first_line, @1.first_column); }
+        | INTEGER tk_punto INTEGER                                  { $$ = new Primitive(parseFloat($1+$2+$3), type.DOUBLE, @1.first_line, @1.first_column); }
+        | INTEGER tk_minus INTEGER tk_minus INTEGER                 { $$ = new Primitive(parseDate($1+$2+$3+$4+$5), type.DATE, @1.first_line, @1.first_column); }
         | tk_par_left expression tk_par_right                       { $$ = $2; }
     ;

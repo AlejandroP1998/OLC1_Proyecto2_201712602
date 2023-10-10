@@ -16,6 +16,9 @@ export class Print implements Instruction {
         this.expression = expression;
         this.row = row;
         this.column = column;
+        /* console.log(this.expression);
+        console.log(this.row);
+        console.log(this.column); */
     }
 
     getValue(tree: Tree, table: Environment): ReturnType {
@@ -36,9 +39,7 @@ export class Print implements Instruction {
     getCST(): Node {
         let node: Node = new Node("Print");
         node.addChild("print");
-        node.addChild("(");
         node.addChildsNode(this.expression.getCST());
-        node.addChild(")");
 
         return node;
     }
