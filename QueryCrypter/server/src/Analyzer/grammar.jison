@@ -17,6 +17,7 @@
     import { Truncate } from './instructions/Truncate.js';
     import { Typeof } from './instructions/Typeof.js';
     import { Declaration } from './instructions/Declaration.js';
+    import { Declarations } from './instructions/Declarations.js';
     import { If } from './instructions/If.js';
 
 %}
@@ -25,12 +26,13 @@
     // Variables definition and functions
 
     export let errors = [];
+    export let globals = [];
 
     export const clean_errors = () => {
         errors = [];
+        globals = [];
     }
 
-    let globals = [];
 
     let a;
 
@@ -45,6 +47,13 @@
         if(b){
             b.valor = valor;
         }
+    }
+
+    function devolverValorG(nombre){
+        const b = globals.find( vari => vari.nombre === nombre);
+        console.log(b.valor);
+        return b.valor;
+        
     }
 
     function parseDate(dateString) {
@@ -236,19 +245,16 @@
         | error tk_semicolon                                        { errors.push(`Sintactic error ${yytext} in [${this._$.first_line}, ${this._$.first_column}]`); $$ = null; }
     ;
 
-    reglas : 
-        encapsular                                                  { $$ = $1; }
-        | regla                                                     { $$ = $1; }
-    ;
 
     encapsular : 
-        res_begin regla res_end tk_semicolon                        { $$ = $2; }
+        res_begin instructions res_end tk_semicolon                 { $$ = $2; }
     ;
 
-    regla : 
+    reglas : 
         funcionesNativas                                            { $$ = $1; }
-        | res_declare declaraciones tk_semicolon                    { $$ = $2; }
+        | res_declare declaraciones tk_semicolon                    { $$ = new Declarations($2,@1.first_line,@1.first_column); console.log('Declaraciones: ',$2) }
         | asignacion tk_semicolon                                   { $$ = $1; }
+        | sentenciasGenerales                                       { $$ = $1; }
     ;
 
     methodsDDL :
@@ -266,23 +272,37 @@
     ;
 
     casteos :
+        res_cast tk_par_left expression res_as tipos tk_par_right
     ;
 
     sentenciasGenerales :
-        if
+        if                          { $$ = $1; }
         | case
         | while
         | for
     ;
 
-    funciones :
+    if :
+        res_if expression res_then res_begin instructions res_end tk_semicolon 
+            { $$ = new If($2, $5, undefined, undefined, @1.first_line, @1.first_column); }
+        | res_if expression res_then instructions res_else instructions res_end res_if tk_semicolon 
+            { $$ = new If($2, $4, $6, undefined, @1.first_line, @1.first_column); }
+    ;
 
+    funciones :
+        res_create res_function IDENTIFIER tk_par_left parametrosEntrada tk_par_right
     ;
 
     metodos :
+        res_create res_procedure IDENTIFIER parametrosEntrada res_as encapsular
     ;
 
     llamadas :
+        res_select IDENTIFIER tk_par_left parametros tk_par_right
+        | res_set tk_arroba IDENTIFIER tk_eq IDENTIFIER tk_par_left parametros tk_par_right
+    ;
+
+    parametros :
     ;
     
 
@@ -292,12 +312,12 @@
     ;
 
     declaracion : 
-        tk_arroba IDENTIFIER tipos                                  { $$ = $2; a = new varG($2, $3,null); globals.push(a);}
-        | tk_arroba IDENTIFIER tipos res_default expression         { $$ = $2; a = new varG($2, $3, $5);  globals.push(a);}
+        tk_arroba expression tipos                                  { $$ = new Declaration($3,$2,null,@1.first_line, @1.first_column); a = new varG($2, $3,null); globals.push(a);}
+        | tk_arroba expression tipos res_default expression         { $$ = new Declaration($3,$2,$5,@1.first_line, @1.first_column); a = new varG($2, $3, $5);  globals.push(a); console.log('varG -> ',a); console.log('globals -> ',globals);}
     ;
 
     asignacion :
-        res_set tk_arroba IDENTIFIER tk_assign expression           { $$ = $3; searchG($3,$5); }
+        res_set tk_arroba IDENTIFIER tk_assign expression           { $$ = new Declaration($3,$2,$5,@1.first_line, @1.first_column); searchG($3,$5); }
     ;
 
     funcionesNativas:
@@ -352,10 +372,31 @@
     ;
 
     expression : 
-        IDENTIFIER                                                  { $$ = new Identifier($1, @1.first_line, @1.first_column); }
+        expression tk_eq expression                                 { $$ = new Relational($1, $3, relationalOperator.EQ, @1.first_line, @1.first_column); }
+        | expression tk_neq expression                              { $$ = new Relational($1, $3, relationalOperator.NEQ, @1.first_line, @1.first_column); }
+        | expression tk_lte expression                              { $$ = new Relational($1, $3, relationalOperator.LTE, @1.first_line, @1.first_column); }
+        | expression tk_gte expression                              { $$ = new Relational($1, $3, relationalOperator.GTE, @1.first_line, @1.first_column); }
+        | expression tk_lt expression                               { $$ = new Relational($1, $3, relationalOperator.LT, @1.first_line, @1.first_column); }
+        | expression tk_gt expression                               { $$ = new Relational($1, $3, relationalOperator.GT, @1.first_line, @1.first_column); }
+        | IDENTIFIER                                                {  
+        if(globals.some(vari => vari.nombre.id === $1)){
+            let elemento = globals.find(vari => vari.nombre.id === $1);
+            console.log("entro a buscar");
+            $$ = elemento.valor;
+        }else{
+            console.log('$1');
+            console.log('no entro a buscar');
+            $$ = new Identifier($1, @1.first_line, @1.first_column); }}
         | VARCHAR                                                   { $$ = new Primitive($1, type.VARCHAR, @1.first_line, @1.first_column); }
         | INTEGER                                                   { $$ = new Primitive($1, type.INT, @1.first_line, @1.first_column); }
         | INTEGER tk_punto INTEGER                                  { $$ = new Primitive(parseFloat($1+$2+$3), type.DOUBLE, @1.first_line, @1.first_column); }
         | INTEGER tk_minus INTEGER tk_minus INTEGER                 { $$ = new Primitive(parseDate($1+$2+$3+$4+$5), type.DATE, @1.first_line, @1.first_column); }
+        | res_null                                                  { $$ = new Primitive($1, type.NULL, @1.first_line, @1.first_column); }
+        | boolean                                                   { $$ = $1; }
         | tk_par_left expression tk_par_right                       { $$ = $2; }
+    ;
+
+    boolean :
+        res_true                                                    { $$ = new Primitive($1, type.BOOLEAN, @1.first_line, @1.first_column); }
+        | res_false                                                 { $$ = new Primitive($1, type.BOOLEAN, @1.first_line, @1.first_column); }
     ;

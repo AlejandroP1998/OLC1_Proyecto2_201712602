@@ -3,8 +3,7 @@ export enum type {
     DOUBLE  = 'double',
     DATE    = 'date',
     VARCHAR = 'varchar',
-    TRUE    = 'true',
-    FALSE   = 'false',
+    BOOLEAN = 'boolean',
     NULL    = 'null'
 
 }

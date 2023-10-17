@@ -21,6 +21,10 @@ export class Declaration implements Instruction {
         this.expression = expression;
         this.row = row;
         this.column = column;
+
+        //console.log('type ->',this.type);
+        //console.log('id ->', this.id);
+        //console.log('expression ->', this.expression);
     }
 
     getValue(tree: Tree, table: Environment): ReturnType {
@@ -46,6 +50,7 @@ export class Declaration implements Instruction {
         let result: any = table.setTable(new Symbol(this.id, this.type, value.value, this.row, this.column, table.name));
 
         if (result instanceof Exception) {
+            console.log(result)
             return result;
         }
 

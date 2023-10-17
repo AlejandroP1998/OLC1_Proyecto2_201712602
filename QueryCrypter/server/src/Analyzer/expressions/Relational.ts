@@ -18,6 +18,9 @@ export class Relational implements Instruction {
         this.exp1 = exp1;
         this.exp2 = exp2;
         this.operator = operator;
+        /* console.log(this.exp1);
+        console.log(this.exp2);
+        console.log(this.operator); */
         this.row = row;
         this.column = column;
     }
@@ -41,7 +44,7 @@ export class Relational implements Instruction {
         }
 
         if (Object.values(relationalOperator).includes(this.operator)) {
-            return new ReturnType(type.TRUE, this.operate(Number(left.value), Number(right.value), this.operator));
+            return new ReturnType(type.BOOLEAN, this.operate(Number(left.value), Number(right.value), this.operator));
         } else {
             // Semantic Error
             return new ReturnType(type.INT, new Exception("Semantic", `The operator: ${this.operator} not be a relational operator`, this.row, this.column, table.name));
@@ -49,7 +52,7 @@ export class Relational implements Instruction {
     }
 
     operate(exp1: number, exp2: number, op: relationalOperator): string {
-        switch(op){
+        switch (op) {
             case relationalOperator.EQ:
                 return String(exp1 == exp2).toLowerCase();
             case relationalOperator.NEQ:
@@ -66,7 +69,7 @@ export class Relational implements Instruction {
     }
 
     interpret(tree: Tree, table: Environment) {
-        
+
     }
 
     getCST(): Node {
@@ -74,7 +77,7 @@ export class Relational implements Instruction {
         node.addChildsNode(this.exp1.getCST());
         node.addChild(this.operator);
         node.addChildsNode(this.exp2.getCST());
-        
+
         return node;
     }
 
