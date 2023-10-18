@@ -44,15 +44,6 @@ export class Round implements Instruction {
     tree.updateConsole(`${value}`);
   }
 
-  getCST(): Node {
-    let node: Node = new Node("Round");
-    node.addChild("round");
-    node.addChild("(");
-    node.addChildsNode(this.expression.getCST());
-    node.addChild(")");
-
-    return node;
-  }
 
   getAST(): Node {
     let node: Node = new Node("Round");

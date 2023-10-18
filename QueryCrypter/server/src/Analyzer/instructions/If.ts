@@ -82,40 +82,6 @@ export class If implements Instruction {
         }
     }
 
-    getCST(): Node {
-        let node: Node = new Node("If");
-        node.addChild("if");
-        node.addChild("(");
-        node.addChildsNode(this.expression.getCST());
-        node.addChild(")");
-        node.addChild("{");
-
-        let instructions: Node = new Node("Instructions");
-        for (let item of this.instructions) {
-            instructions.addChildsNode(item.getCST());
-        }
-
-        node.addChildsNode(instructions);
-        node.addChild("}");
-
-        if (this.elseInstructions !== undefined) {
-            let elseInstructions: Node = new Node("Else Instructions");
-            node.addChild("else");
-            node.addChild("{");
-
-            for (let item of this.elseInstructions) {
-                elseInstructions.addChildsNode(item.getCST());
-            }
-
-            node.addChildsNode(elseInstructions);
-            node.addChild("}");
-        } else if (this.elseIf !== undefined) {
-            node.addChildsNode(this.elseIf.getCST());
-        }
-
-        return node;
-    }
-
     getAST(): Node {
 
         let node: Node = new Node("If");

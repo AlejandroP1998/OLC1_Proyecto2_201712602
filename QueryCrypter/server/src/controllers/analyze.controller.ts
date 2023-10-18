@@ -3,12 +3,11 @@ import Tree from "../Analyzer/tools/Tree.js";
 import Environment from "../Analyzer/tools/Environment.js";
 import { Instruction } from "../Analyzer/abstract/Instruction.js";
 // @ts-ignore
-import { grammar, errors, clean_errors } from '../../dist/Analyzer/grammar.js'
+import { grammar, clean_errors } from '../../dist/Analyzer/grammar.js'
 import { Node } from "../Analyzer/abstract/Node.js";
 
 interface outParse {
     "console": string,
-    "cst": string,
     "ast": string
 }
 
@@ -19,7 +18,6 @@ export const analyze = (req: Request, res: Response) => {
 
     res.json({
         "console": out.console,
-        "cst": out.cst,
         "ast": out.ast
     });
 }
@@ -31,9 +29,7 @@ const interpret = (bufferStrem: string): outParse => {
     let instructions: Array<Instruction>;
 
     clean_errors();
-    //console.log('bufferStrem -> ',bufferStrem)
     instructions = grammar.parse(bufferStrem);
-    //console.log(instructions)
     
     tree = new Tree(instructions);
     globalTable = new Environment(undefined, undefined);
@@ -43,16 +39,7 @@ const interpret = (bufferStrem: string): outParse => {
         let value: any = instruction.interpret(tree, globalTable);
     }
 
-    let rootCst:Node = new Node("Root");
-    let instruction: Node = new Node("Instructions");
-
-    for (let item of tree.instructions) {
-        instruction.addChildsNode(item.getCST());
-    }
-    rootCst.addChildsNode(instruction);
-
-    let graph = tree.getDot(rootCst);
-
+    
     let rootAst: Node = new Node("Root");
     let value: Node = new Node("Instructions");
 
@@ -66,8 +53,7 @@ const interpret = (bufferStrem: string): outParse => {
     
     return {
         "console": tree.console,
-        "ast": ast,
-        "cst": graph
+        "ast": ast
     }
     
 }

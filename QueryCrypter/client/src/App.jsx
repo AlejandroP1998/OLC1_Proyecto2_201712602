@@ -109,7 +109,6 @@ function App() {
           className='cm1'
           width='100%'
           height='100%'
-          theme={ abyss }
           value={code}
           onChange={onChange}
           extensions={[langs.sql()]}

@@ -26,12 +26,6 @@ export default class Primitive implements Instruction {
         return undefined;
     }
 
-    getCST(): Node {
-        let node = new Node("Primitive");
-        node.addChild(this.value);
-        return node;
-    }
-
     getAST(): Node {
         return new Node(this.value);
     }

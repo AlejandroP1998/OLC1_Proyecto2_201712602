@@ -41,12 +41,6 @@ export class Identifier implements Instruction {
         
     }
 
-    getCST(): Node {
-        let node: Node = new Node("Indentifier");
-        node.addChild(this.id);
-
-        return node;
-    }
 
     getAST(): Node {
         return new Node(this.id);

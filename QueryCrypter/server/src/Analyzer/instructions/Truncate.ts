@@ -44,15 +44,6 @@ export class Truncate implements Instruction {
     tree.updateConsole(`${value}`);
   }
 
-  getCST(): Node {
-    let node: Node = new Node("Truncate");
-    node.addChild("truncate");
-    node.addChild("(");
-    node.addChildsNode(this.expression.getCST());
-    node.addChild(")");
-
-    return node;
-  }
 
   getAST(): Node {
     let node: Node = new Node("Truncate");

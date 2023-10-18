@@ -42,21 +42,6 @@ export class Declarations implements Instruction {
 
   }
 
-  getCST(): Node {
-    let node: Node = new Node("Declaration");
-    node.addChild("declare");
-    node.addChild("{");
-
-    let instructions: Node = new Node("Instructions");
-    for (let item of this.instructions) {
-      instructions.addChildsNode(item.getCST());
-    }
-
-    node.addChildsNode(instructions);
-    node.addChild("}");
-
-    return node;
-  }
 
   getAST(): Node {
 

@@ -34,9 +34,14 @@ export default class Tree {
     }
 
     public travelCst(idRoot: any, nodeRoot: Node) {
+        
         for(let item of nodeRoot.childs){
             let name_child = `n${this.count}`;
-            this.dot += `${name_child} [label = "${item.value.replace("\"", "\\\"")}"];\n`;
+            try {
+                this.dot += `${name_child} [label = "${item.value.replace("\"", "\\\"")}"];\n`;
+            } catch (error) {
+                this.dot += `${name_child} [label = "${item.value}"];\n`;
+            }
             this.dot += `${idRoot} -> ${name_child};\n`;
             this.count++;
             this.travelCst(name_child, item);

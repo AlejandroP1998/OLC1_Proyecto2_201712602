@@ -3,12 +3,13 @@
 */
 
 %{
-    // Importations
+    //Importaciones
     import { type, arithmeticOperator, relationalOperator } from "./tools/Type.js";
     import { Arithmetic } from './expressions/Arithmetic.js';
     import { Relational } from './expressions/Relational.js';
     import Primitive from './expressions/Primitive.js';
     import { Identifier } from './expressions/Identifier.js';
+    //Funciones nativas
     import { Print } from './instructions/Print.js';
     import { Lower } from './instructions/Lower.js';
     import { Upper } from './instructions/Upper.js';
@@ -16,13 +17,15 @@
     import { Len } from './instructions/Len.js';
     import { Truncate } from './instructions/Truncate.js';
     import { Typeof } from './instructions/Typeof.js';
-    import { Declaration } from './instructions/Declaration.js';
+    //Manejo de variables
     import { Declarations } from './instructions/Declarations.js';
+    //Sentencias de control
     import { If } from './instructions/If.js';
 
 %}
 
 %{
+
     // Variables definition and functions
 
     export let errors = [];
@@ -34,27 +37,7 @@
     }
 
 
-    let a;
-
-    function varG(nombre, tipo, valor) {
-        this.nombre = nombre;
-        this.tipo = tipo;
-        this.valor = valor===null?"":valor;
-    }
-
-    function searchG(nombre,valor){
-        const b = globals.find( vari => vari.nombre === nombre);
-        if(b){
-            b.valor = valor;
-        }
-    }
-
-    function devolverValorG(nombre){
-        const b = globals.find( vari => vari.nombre === nombre);
-        console.log(b.valor);
-        return b.valor;
-        
-    }
+    let a,b;
 
     function parseDate(dateString) {
         const [year, month, day] = dateString.split('-').map(Number);
@@ -252,7 +235,7 @@
 
     reglas : 
         funcionesNativas                                            { $$ = $1; }
-        | res_declare declaraciones tk_semicolon                    { $$ = new Declarations($2,@1.first_line,@1.first_column); console.log('Declaraciones: ',$2) }
+        | res_declare declaraciones tk_semicolon                    { $$ = new Declarations($2,@1.first_line,@1.first_column); /* console.log('Declaraciones: ',$2) */ }
         | asignacion tk_semicolon                                   { $$ = $1; }
         | sentenciasGenerales                                       { $$ = $1; }
     ;
@@ -284,9 +267,13 @@
 
     if :
         res_if expression res_then res_begin instructions res_end tk_semicolon 
-            { $$ = new If($2, $5, undefined, undefined, @1.first_line, @1.first_column); }
+            {
+                $$ = new If($2, $5, undefined, undefined, @1.first_line, @1.first_column); 
+            }
         | res_if expression res_then instructions res_else instructions res_end res_if tk_semicolon 
-            { $$ = new If($2, $4, $6, undefined, @1.first_line, @1.first_column); }
+            { 
+                $$ = new If($2, $4, $6, undefined, @1.first_line, @1.first_column); 
+            }
     ;
 
     funciones :
@@ -312,12 +299,22 @@
     ;
 
     declaracion : 
-        tk_arroba expression tipos                                  { $$ = new Declaration($3,$2,null,@1.first_line, @1.first_column); a = new varG($2, $3,null); globals.push(a);}
-        | tk_arroba expression tipos res_default expression         { $$ = new Declaration($3,$2,$5,@1.first_line, @1.first_column); a = new varG($2, $3, $5);  globals.push(a); console.log('varG -> ',a); console.log('globals -> ',globals);}
+        tk_arroba expression tipos                                  { globals.push($2);/* console.log("globals -> ",globals,"$2 -> ",$2); */ $$ = $2;}
+        | tk_arroba expression tipos res_default expression         { a = $2; a.value = $5;  globals.push(a); /* console.log("globals -> ",globals,"a -> ",a); */ $$ = a;}
     ;
 
     asignacion :
-        res_set tk_arroba IDENTIFIER tk_assign expression           { $$ = new Declaration($3,$2,$5,@1.first_line, @1.first_column); searchG($3,$5); }
+        res_set tk_arroba expression tk_assign expression           { 
+            //console.log("entro al set -> $3",$3);
+            for (let i = 0; i < globals.length; i++) {
+                 if (globals[i].id === $3.id) {
+                    //console.log("entro al set -> $5",$5);
+                    globals[i].value = $5;
+                    break;
+                }
+}
+            $$ = a;
+         }
     ;
 
     funcionesNativas:
@@ -372,21 +369,51 @@
     ;
 
     expression : 
-        expression tk_eq expression                                 { $$ = new Relational($1, $3, relationalOperator.EQ, @1.first_line, @1.first_column); }
-        | expression tk_neq expression                              { $$ = new Relational($1, $3, relationalOperator.NEQ, @1.first_line, @1.first_column); }
-        | expression tk_lte expression                              { $$ = new Relational($1, $3, relationalOperator.LTE, @1.first_line, @1.first_column); }
-        | expression tk_gte expression                              { $$ = new Relational($1, $3, relationalOperator.GTE, @1.first_line, @1.first_column); }
-        | expression tk_lt expression                               { $$ = new Relational($1, $3, relationalOperator.LT, @1.first_line, @1.first_column); }
-        | expression tk_gt expression                               { $$ = new Relational($1, $3, relationalOperator.GT, @1.first_line, @1.first_column); }
-        | IDENTIFIER                                                {  
-        if(globals.some(vari => vari.nombre.id === $1)){
-            let elemento = globals.find(vari => vari.nombre.id === $1);
-            console.log("entro a buscar");
-            $$ = elemento.valor;
-        }else{
-            console.log('$1');
-            console.log('no entro a buscar');
-            $$ = new Identifier($1, @1.first_line, @1.first_column); }}
+        expression tk_eq expression                                 
+        {   
+            $1.id ? a = $1.value : a = $1;
+            $3.id ? b = $3.value : b = $3;
+            $$ = new Relational(a, b, relationalOperator.EQ, @1.first_line, @1.first_column); 
+        }
+        | expression tk_neq expression                              
+        {
+            $1.id ? a = $1.value : a = $1;
+            $3.id ? b = $3.value : b = $3; 
+            $$ = new Relational(a, b, relationalOperator.NEQ, @1.first_line, @1.first_column); 
+        }
+        | expression tk_lte expression                              
+        { 
+            $1.id ? a = $1.value : a = $1;
+            $3.id ? b = $3.value : b = $3;
+            $$ = new Relational(a, b, relationalOperator.LTE, @1.first_line, @1.first_column); 
+        }
+        | expression tk_gte expression                              
+        {
+            $1.id ? a = $1.value : a = $1;
+            $3.id ? b = $3.value : b = $3; 
+            $$ = new Relational(a, b, relationalOperator.GTE, @1.first_line, @1.first_column); 
+        }
+        | expression tk_lt expression                               
+        {   
+            $1.id ? a = $1.value : a = $1;
+            $3.id ? b = $3.value : b = $3; 
+            $$ = new Relational(a, b, relationalOperator.LT, @1.first_line, @1.first_column); 
+        }
+        | expression tk_gt expression                               
+        {   
+            $1.id ? a = $1.value : a = $1;
+            $3.id ? b = $3.value : b = $3; 
+            $$ = new Relational(a, b, relationalOperator.GT, @1.first_line, @1.first_column); 
+        }
+        | IDENTIFIER                                                
+        {
+            if(globals.some(vari => vari.id === $1)){
+                a = globals.find(vari => vari.id === $1);
+                $$ = a;
+            }else{
+                $$ = new Identifier($1, @1.first_line, @1.first_column); 
+            }
+        }
         | VARCHAR                                                   { $$ = new Primitive($1, type.VARCHAR, @1.first_line, @1.first_column); }
         | INTEGER                                                   { $$ = new Primitive($1, type.INT, @1.first_line, @1.first_column); }
         | INTEGER tk_punto INTEGER                                  { $$ = new Primitive(parseFloat($1+$2+$3), type.DOUBLE, @1.first_line, @1.first_column); }

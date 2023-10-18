@@ -37,16 +37,6 @@ export class Typeof implements Instruction {
     tree.updateConsole(`${value}`);
   }
 
-  getCST(): Node {
-    let node: Node = new Node("Typeof");
-    node.addChild("typeof");
-    node.addChild("(");
-    node.addChildsNode(this.expression.getCST());
-    node.addChild(")");
-
-    return node;
-  }
-
   getAST(): Node {
     let node: Node = new Node("Typeof");
     node.addChildsNode(this.expression.getAST());

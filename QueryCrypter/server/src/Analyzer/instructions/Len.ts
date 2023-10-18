@@ -37,16 +37,6 @@ export class Len implements Instruction {
     tree.updateConsole(`${value}`);
   }
 
-  getCST(): Node {
-    let node: Node = new Node("Length");
-    node.addChild("length");
-    node.addChild("(");
-    node.addChildsNode(this.expression.getCST());
-    node.addChild(")");
-
-    return node;
-  }
-
   getAST(): Node {
     let node: Node = new Node("Length");
     node.addChildsNode(this.expression.getAST());

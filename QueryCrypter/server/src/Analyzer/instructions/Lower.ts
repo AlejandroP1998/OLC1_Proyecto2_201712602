@@ -37,16 +37,6 @@ export class Lower implements Instruction {
     tree.updateConsole(`${value}`);
   }
 
-  getCST(): Node {
-    let node: Node = new Node("Lower");
-    node.addChild("lower");
-    node.addChild("(");
-    node.addChildsNode(this.expression.getCST());
-    node.addChild(")");
-
-    return node;
-  }
-
   getAST(): Node {
     let node: Node = new Node("Lower");
     node.addChildsNode(this.expression.getAST());

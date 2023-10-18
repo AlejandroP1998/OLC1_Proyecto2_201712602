@@ -62,15 +62,6 @@ export class Arithmetic implements Instruction {
 
     }
 
-    getCST(): Node {
-        let node: Node = new Node("Arithmetic Expression");
-        node.addChildsNode(this.exp1.getCST());
-        node.addChild(this.operator.toString());
-        node.addChildsNode(this.exp2.getCST());
-
-        return node;
-    }
-
     getAST(): Node {
         let node: Node = new Node(this.operator.toString());
         node.addChildsNode(this.exp1.getAST());

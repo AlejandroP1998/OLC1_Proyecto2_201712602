@@ -36,13 +36,6 @@ export class Print implements Instruction {
         tree.updateConsole(`${value}`);
     }
 
-    getCST(): Node {
-        let node: Node = new Node("Print");
-        node.addChild("print");
-        node.addChildsNode(this.expression.getCST());
-
-        return node;
-    }
 
     getAST(): Node {
         let node: Node = new Node("Print");

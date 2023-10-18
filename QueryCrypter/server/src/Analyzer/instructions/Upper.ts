@@ -37,16 +37,6 @@ export class Upper implements Instruction {
     tree.updateConsole(`${value}`);
   }
 
-  getCST(): Node {
-    let node: Node = new Node("Upper");
-    node.addChild("upper");
-    node.addChild("(");
-    node.addChildsNode(this.expression.getCST());
-    node.addChild(")");
-
-    return node;
-  }
-
   getAST(): Node {
     let node: Node = new Node("Upper");
     node.addChildsNode(this.expression.getAST());

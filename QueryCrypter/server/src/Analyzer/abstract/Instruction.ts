@@ -9,6 +9,5 @@ export interface Instruction {
 
     getValue(tree: Tree, table: Environment): ReturnType;
     interpret(tree: Tree, table: Environment): any;
-    getCST(): Node;
     getAST(): Node;
 }

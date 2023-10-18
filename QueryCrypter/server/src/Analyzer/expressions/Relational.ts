@@ -72,15 +72,6 @@ export class Relational implements Instruction {
 
     }
 
-    getCST(): Node {
-        let node: Node = new Node("Relational Expression");
-        node.addChildsNode(this.exp1.getCST());
-        node.addChild(this.operator);
-        node.addChildsNode(this.exp2.getCST());
-
-        return node;
-    }
-
     getAST(): Node {
         let node: Node = new Node(this.operator);
         node.addChildsNode(this.exp1.getAST());
