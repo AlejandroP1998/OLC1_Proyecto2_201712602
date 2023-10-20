@@ -16,9 +16,7 @@ export class Print implements Instruction {
         this.expression = expression;
         this.row = row;
         this.column = column;
-        /* console.log(this.expression);
-        console.log(this.row);
-        console.log(this.column); */
+        console.log("🚀 ~ file: Print.ts:20 ~ Print ~ constructor ~ this.expression:", this.expression)
     }
 
     getValue(tree: Tree, table: Environment): ReturnType {

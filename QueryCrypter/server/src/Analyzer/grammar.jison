@@ -79,6 +79,7 @@
 "double"                    return "res_double";
 "date"                      return "res_date";
 "varchar"                   return "res_varchar";
+"boolean"                   return "res_boolean";
 "true"                      return "res_true";
 "false"                     return "res_false";
 "null"                      return "res_null";
@@ -245,7 +246,7 @@
 
 
     encapsular : 
-        res_begin instructions res_end tk_semicolon                 { $$ = $2; }
+        res_begin funcionesNativas res_end tk_semicolon                 { $$ = $2; }
     ;
 
     reglas : 
@@ -267,10 +268,6 @@
         | updateDML
         | truncateDML
         | deleteDML
-    ;
-
-    casteos :
-        res_cast tk_par_left expression res_as tipos tk_par_right
     ;
 
     sentenciasGenerales :
@@ -542,11 +539,84 @@
         | INTEGER tk_punto INTEGER                                  { $$ = new Primitive(parseFloat($1+$2+$3), type.DOUBLE, @1.first_line, @1.first_column); }
         | DATE                                                      { $$ = new Primitive(parseDate($1), type.DATE, @1.first_line, @1.first_column); }
         | res_null                                                  { $$ = new Primitive($1, type.NULL, @1.first_line, @1.first_column); }
-        | boolean                                                   { $$ = $1; }
+        | booleans                                                  { $$ = $1; }
+        | res_cast tk_par_left expression res_as tipos tk_par_right
+        {
+            $3.id? a = $3.value.value : a = $3.value
+            console.log("🚀 ~ file: grammar.jison:278 ~ $3:", $3)
+            console.log("🚀 ~ file: grammar.jison:277 ~ a:", a)
+            if($5 === "int"){
+                if($3.id){
+                    for (let i = 0; i < globals.length; i++) {
+                        if (globals[i].id === $3.id) {
+                            globals[i].value = new Primitive(a, type.INT, @1.first_line, @1.first_column);
+                            break;
+                        }
+                    }
+                }
+                $$ = new Primitive(a, type.INT, @1.first_line, @1.first_column);
+            }
+            else if($5 === "double"){
+                if($3.id){
+                    for (let i = 0; i < globals.length; i++) {
+                        if (globals[i].id === $3.id) {
+                            globals[i].value = new Primitive(a, type.DOUBLE, @1.first_line, @1.first_column);
+                            break;
+                        }
+                    }
+                }
+                $$ = new Primitive(a, type.DOUBLE, @1.first_line, @1.first_column);
+            }
+            else if($5 === "date"){
+                if($3.id){
+                    for (let i = 0; i < globals.length; i++) {
+                        if (globals[i].id === $3.id) {
+                            globals[i].value = new Primitive(a, type.DATE, @1.first_line, @1.first_column);
+                            break;
+                        }
+                    }
+                }
+                $$ = new Primitive(a, type.DATE, @1.first_line, @1.first_column);
+            }
+            else if($5 === "varchar"){
+                console.log("varchar CAST")
+                if($3.id){
+                    for (let i = 0; i < globals.length; i++) {
+                        if (globals[i].id === $3.id) {
+                            globals[i].value = new Primitive(a, type.VARCHAR, @1.first_line, @1.first_column);
+                            break;
+                        }
+                    }
+                }
+                $$ = new Primitive(a, type.VARCHAR, @1.first_line, @1.first_column);
+            }
+            else if($5 === "boolean"){
+                if($3.id){
+                    for (let i = 0; i < globals.length; i++) {
+                        if (globals[i].id === $3.id) {
+                            globals[i].value = new Primitive(a, type.BOOLEAN, @1.first_line, @1.first_column);
+                            break;
+                        }
+                    }
+                }
+                $$ = new Primitive(a, type.BOOLEAN, @1.first_line, @1.first_column);
+            }
+            else if($5 === "null"){
+                if($3.id){
+                    for (let i = 0; i < globals.length; i++) {
+                        if (globals[i].id === $3.id) {
+                            globals[i].value = new Primitive(a, type.NULL, @1.first_line, @1.first_column);
+                            break;
+                        }
+                    }
+                }
+                $$ = new Primitive(a, type.NULL, @1.first_line, @1.first_column);
+            }
+        }
         | tk_par_left expression tk_par_right                       { $$ = $2; }
     ;
 
-    boolean :
+    booleans :
         res_true                                                    { $$ = new Primitive($1, type.BOOLEAN, @1.first_line, @1.first_column); }
         | res_false                                                 { $$ = new Primitive($1, type.BOOLEAN, @1.first_line, @1.first_column); }
     ;
