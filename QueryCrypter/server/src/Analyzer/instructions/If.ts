@@ -11,20 +11,18 @@ export class If implements Instruction {
     public expression: Instruction;
     public instructions: Array<Instruction>;
     public elseInstructions: Array<Instruction> | undefined;
-    public elseIf: Instruction | undefined;
     public row: number;
     public column: number;
 
 
-    constructor(expression: Instruction, instructions: Array<Instruction>, elseInstructions: Array<Instruction> | undefined, elseIf: Instruction | undefined, row: number, column: number) {
+    constructor(expression: Instruction, instructions: Array<Instruction>, elseInstructions: Array<Instruction> | undefined, row: number, column: number) {
         this.expression = expression;
         this.instructions = instructions;
         this.elseInstructions = elseInstructions;
-        this.elseIf = elseIf;
         this.row = row;
         this.column = column;
-        console.log('expression -> ',this.expression);
-        console.log('instructions -> ',this.instructions);
+        //console.log('expressionIf -> ',this.expression);
+        //console.log('instructionsIf -> ',this.instructions);
     }
 
     getValue(tree: Tree, table: Environment): ReturnType {
@@ -33,7 +31,7 @@ export class If implements Instruction {
 
     interpret(tree: Tree, table: Environment) {
         let flag: ReturnType = this.expression.getValue(tree, table);
-        console.log("flag value -> ",flag.value);
+        //console.log("flagIf value -> ",flag.value);
 
 
         if (flag.value instanceof Exception) {
@@ -48,7 +46,10 @@ export class If implements Instruction {
                 let instruction: any;
 
                 for (let item of this.instructions) {
+                    //console.log("🚀 ~ file: If.ts:51 ~ If ~ interpret ~ item:", item)
+                    
                     instruction = item.interpret(tree, newTable);
+                    
 
                     if (instruction instanceof Exception) {
                         // Semantic Error
@@ -68,13 +69,6 @@ export class If implements Instruction {
                         tree.errors.push(instruction);
                         tree.updateConsole(instruction.toString());
                     }
-                }
-            } else if (this.elseIf !== undefined) {
-                let result: any = this.elseIf.interpret(tree, table);
-
-                if (result instanceof Exception) {
-                    // Semantic Error
-                    return result;
                 }
             }
         } else {
@@ -102,9 +96,7 @@ export class If implements Instruction {
             }
 
             node.addChildsNode(insFalse);
-        } else if (this.elseIf !== undefined) {
-            node.addChildsNode(this.elseIf.getAST());
-        }
+        } 
 
 
         return node;

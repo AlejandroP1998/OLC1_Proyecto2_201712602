@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "codemirror-graphql": "^2.0.10"
+    "codemirror-graphql": "^2.0.10",
+    "graphviz": "^0.0.9"
   }
 }
