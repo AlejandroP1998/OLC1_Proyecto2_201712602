@@ -276,7 +276,9 @@
     sentenciasGenerales :
         if                          { $$ = $1; }
         | case                      { $$ = $1; }
-        | while                     { $$ = $1; }                    
+        | while                     { $$ = $1; }
+        | for                       { $$ = $1; }
+                   
     ;
 
     if :
@@ -331,6 +333,10 @@
     ;
 
     for :
+        res_for expression res_in expression tk_coma expression res_begin instructions res_end tk_semicolon
+        {
+            $$ = new For($2,$4.value,$6.value,$8,@1.first_line,@1.first_column);
+        }
     ;
 
     funciones :
