@@ -1,11 +1,11 @@
-import React ,{ useState } from 'react'
+import React, { useState } from 'react'
 import CodeMirror from '@uiw/react-codemirror';
 import { oneDarkTheme } from '@uiw/react-codemirror';
 import fileDownload from 'js-file-download';
 import { langs } from '@uiw/codemirror-extensions-langs';
 import './App.css'
-
-
+import Viz from 'viz.js';
+import { Module, render } from 'viz.js/full.render.js';
 
 function App() {
   const [code, setCode] = useState('');
@@ -36,8 +36,27 @@ function App() {
 
   const handleGenerate = async () => {
 
-    fileDownload(ast, "ast.dot");
+    //fileDownload(ast, "ast.dot");
+    // Crea una nueva instancia de Viz
+    const viz = new Viz({ Module, render });//
+
+    // Genera la imagen a partir del código DOT
+    viz.renderString(ast)
+      .then(result => {
+        // 'result' contiene la imagen en formato SVG
+
+        // Crea un elemento 'a' para descargar la imagen
+        const link = document.createElement('a');
+        link.href = `data:image/svg+xml;base64,${btoa(result)}`;
+        link.download = 'ast.svg'; // Cambia el nombre del archivo si es necesario
+        link.click();
+      })
+      .catch(error => {
+        console.error('Error al generar la imagen:', error);
+      });
   }
+
+
 
   const handleFileUpload = (event) => {
     const uploadedFiles = event.target.files;
@@ -45,8 +64,8 @@ function App() {
     setFiles(newFiles);
   };
 
-  const deleteW = () =>{
-    files.splice(files.length-1,1);
+  const deleteW = () => {
+    files.splice(files.length - 1, 1);
   }
 
   const loadFileContent = (file) => {
@@ -118,7 +137,8 @@ function App() {
       </div>
       <div className='button'>
         <button className='btn1' onClick={handleClick}> Ejecutar </button>
-        <button className='btn2' onClick={handleGenerate}> Reportes </button>
+        <button className='btn2' onClick={handleGenerate}>Generar Gráfico</button>
+        <div id="graph-container"></div>
       </div>
     </div>
   )

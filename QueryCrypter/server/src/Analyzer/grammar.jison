@@ -32,8 +32,9 @@
     import { For } from './instructions/For.js';
     //funciones
     //metodos
-    //DDL
-    //DML
+    //DDL y DML
+    import { Database } from './abstract/Database.js'
+    import { Table } from './abstract/Table.js'
 
 %}
 
