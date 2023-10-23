@@ -57,7 +57,7 @@ button {
 }
 
 .btn1:hover {
-  background: #0b7dda;
+  background: #46a049;
 }
 
 .btn2 {
@@ -65,12 +65,42 @@ button {
   margin-left: 2rem;
   font-size: 20px;
   padding: 0.5rem 2rem;
-  background-color: #04AA6D;
+  background-color: #007bff;
   border: none;
   border-radius: 5px;
   cursor: pointer;
 }
 
 .btn2:hover {
-  background: #46a049;
+  background: purple;
+}
+
+.btn3 {
+  margin-top: 1rem;
+  margin-left: 2rem;
+  font-size: 20px;
+  padding: 0.5rem 2rem;
+  background-color: #007bff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn3:hover {
+  background: red;
+}
+
+.btn4 {
+  margin-top: 1rem;
+  margin-left: 2rem;
+  font-size: 20px;
+  padding: 0.5rem 2rem;
+  background-color: #007bff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn4:hover {
+  background: black;
 }

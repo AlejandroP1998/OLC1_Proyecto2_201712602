@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import CodeMirror from '@uiw/react-codemirror';
 import { oneDarkTheme } from '@uiw/react-codemirror';
-import fileDownload from 'js-file-download';
+//import fileDownload from 'js-file-download';
 import { langs } from '@uiw/codemirror-extensions-langs';
 import './App.css'
 import Viz from 'viz.js';
@@ -99,6 +99,14 @@ function App() {
     document.body.removeChild(element);
   };
 
+  const Clean = () => {
+    setCode("");
+  };
+
+  const CleanC = () => {
+    setOut("");
+  };
+
   return (
     <div className='container'>
       <div className='buttons'>
@@ -138,6 +146,8 @@ function App() {
       <div className='button'>
         <button className='btn1' onClick={handleClick}> Ejecutar </button>
         <button className='btn2' onClick={handleGenerate}>Generar Gráfico</button>
+        <button className='btn3' onClick={Clean}> Limpiar editor</button>
+        <button className='btn4' onClick={CleanC}> Limpiar consola</button>
         <div id="graph-container"></div>
       </div>
     </div>

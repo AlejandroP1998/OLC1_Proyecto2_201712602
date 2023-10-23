@@ -33,8 +33,7 @@
     //funciones
     //metodos
     //DDL y DML
-    import { Database } from './abstract/Database.js'
-    import { Table } from './abstract/Table.js'
+    import { Table } from './instructions/Table.js'
 
 %}
 
@@ -42,7 +41,7 @@
 
     // Variables definition and functions
 
-    let errors, globals = [];
+    let errors, globals, db = [];
 
     export const clean_errors = () => {
         errors = [];
@@ -50,7 +49,7 @@
     }
 
 
-    let a,b,c,condicion, incremento;
+    let a,b,c,d,condicion, incremento;
 
     function parseDate(dateString) {
         const [year, month, day] = dateString.split('-').map(Number);
@@ -255,12 +254,113 @@
         | res_declare declaraciones tk_semicolon                    { $$ = new Declarations($2,@1.first_line,@1.first_column); }
         | asignacion tk_semicolon                                   { $$ = $1; }
         | sentenciasGenerales                                       { $$ = $1; }
+        | methodsDDL                                                { $$ = $1; }
     ;
 
     methodsDDL :
-        createDDL
-        | alterDDL
-        | dropDDL
+        createDDL                                                   { $$ = $1; db.push($1); /* console.log("db crear tabla",db); */ }
+        | alterDDL                                                  { $$ = $1; /* console.log("db modificar tabla",db); */}
+    ;
+// CREAR TABLA
+    createDDL :
+        res_create res_table expression tk_par_left columns tk_par_right tk_semicolon
+        { 
+            $3.id ? a = $3.id : a = $3.value
+            $$ =  new Table(a,$5,@1.first_line,@1.first_column);
+        }
+    ;
+
+    columns :
+        columns tk_coma column      { $1.push($3); $$ = $1;}
+        | column                    { $$ = $1 === null ? [] : [$1];}
+    ;
+
+    column :
+        expression tipos            
+        {
+            if($2 === "int"){
+                $1.type = type.INT;
+                $$ = $1;
+            }
+            else if($2 === "double"){
+                $1.type = type.DOUBLE;
+                $$ = $1;
+            }
+            else if($2 === "date"){
+                $1.type = type.DATE;
+                $$ = $1;
+            }
+            else if($2 === "varchar"){
+                $1.type = type.VARCHAR;
+                $$ = $1;
+            }
+            else if($2 === "boolean"){
+                $1.type = type.BOOLEAN;
+                $$ = $1;
+            }
+            else if($2 === "null"){
+                $1.type = type.NULL;
+                $$ = $1;
+            }
+        }
+    ;
+// MODIFICAR TABLA
+
+    alterDDL :
+        res_alter res_table expression alterations tk_semicolon     { $$ = db.find(vari => vari.name === d.name);  }
+    ;
+
+    alterations :
+        addColumn                                                   { $$ = $1; }
+        | dropColumn                                                { $$ = $1; }
+        | renameTable                                               { $$ = $1; }
+        | renameColumn                                              { $$ = $1; }
+    ;
+
+    addColumn :
+        res_add column
+        {
+            if(db.some(vari => vari.name === d.name)){
+                let a = db.find(vari => vari.name === d.name);
+                a.instructions.push($2);
+                $$ = a;
+            }
+        }
+    ;
+
+    dropColumn :
+        res_drop res_column expression
+        {
+            if(db.some(vari => vari.name === d.name)){
+                let a = db.find(vari => vari.name === d.name);
+                const index = a.instructions.findIndex(objeto => objeto.id === $3.id);
+                a.instructions.splice(index,1);
+                $$ = a;
+            }
+        }
+    ;
+
+    renameTable :
+        res_rename res_to expression
+        {
+            if(db.some(vari => vari.name === d.name)){
+                let a = db.find(vari => vari.name === d.name);
+                a.name = $3.id;
+                $$ = a;
+            }
+        }
+    ;
+
+    renameColumn :
+        res_rename res_column expression res_to expression
+        {
+            if(db.some(vari => vari.name === d.name)){
+                let a = db.find(vari => vari.name === d.name);
+                const index = a.instructions.findIndex(objeto => objeto.id === $3.id);
+                a.instructions[index].id = $5.id;
+                $$ = a;
+            }
+        }
     ;
 
     methodsDML :
@@ -531,7 +631,12 @@
                 a = globals.find(vari => vari.id === $1);
                 c = a;
                 $$ = a;
-            }else{
+            }else if(db.some(vari => vari.name === $1)){
+                d = db.find(vari => vari.name === $1);
+                //console.log("busco -> ",d);
+                $$ = d;
+            }
+            else{
                 $$ = new Identifier($1, @1.first_line, @1.first_column); 
             }
         }
@@ -544,8 +649,6 @@
         | res_cast tk_par_left expression res_as tipos tk_par_right
         {
             $3.id? a = $3.value.value : a = $3.value
-            console.log("🚀 ~ file: grammar.jison:278 ~ $3:", $3)
-            console.log("🚀 ~ file: grammar.jison:277 ~ a:", a)
             if($5 === "int"){
                 if($3.id){
                     for (let i = 0; i < globals.length; i++) {
@@ -580,7 +683,6 @@
                 $$ = new Primitive(a, type.DATE, @1.first_line, @1.first_column);
             }
             else if($5 === "varchar"){
-                console.log("varchar CAST")
                 if($3.id){
                     for (let i = 0; i < globals.length; i++) {
                         if (globals[i].id === $3.id) {
