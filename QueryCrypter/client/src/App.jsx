@@ -12,6 +12,7 @@ function App() {
   const [out, setOut] = useState('');
   const [ast, setAst] = useState('');
   const [files, setFiles] = useState([]);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
 
   const onChange = React.useCallback((value) => {
     setCode(value);
@@ -59,14 +60,23 @@ function App() {
 
 
   const handleFileUpload = (event) => {
-    const uploadedFiles = event.target.files;
-    const newFiles = Array.from(uploadedFiles);
-    setFiles(newFiles);
+    const uploadedFilesArray = Array.from(event.target.files);
+
+    // Genera un nuevo objeto para cada archivo con un identificador único
+    const newUploadedFiles = uploadedFilesArray.map((file, index) => ({
+      id: index, // Puedes utilizar un índice como identificador único
+      file: file,
+    }));
+
+    setUploadedFiles((prevUploadedFiles) => [...prevUploadedFiles, ...newUploadedFiles]);
   };
 
-  const deleteW = () => {
-    files.splice(files.length - 1, 1);
-  }
+  const removeFile = (fileId) => {
+    // Filtra los archivos que no coincidan con el identificador único
+    const updatedUploadedFiles = uploadedFiles.filter((file) => file.id !== fileId);
+    setUploadedFiles(updatedUploadedFiles);
+  };
+
 
   const loadFileContent = (file) => {
     const reader = new FileReader();
@@ -113,14 +123,16 @@ function App() {
         <input type="file" onChange={handleFileUpload} multiple />
         <button onClick={createNewFile}>Crear Nuevo Archivo</button>
         <button onClick={saveToFile}>Guardar en Archivo Existente</button>
-        <button onClick={deleteW}>Eliminar pestaña</button>
       </div>
 
       <div className="file-buttons">
-        {files.map((file, index) => (
-          <button key={index} onClick={() => loadFileContent(file)}>
-            {file.name}
-          </button>
+        {uploadedFiles.map((fileObj) => (
+          <div key={fileObj.id}>
+            <button onClick={() => loadFileContent(fileObj.file)}>
+              {fileObj.file.name}
+            </button>
+            <button onClick={() => removeFile(fileObj.id)}>Eliminar</button>
+          </div>
         ))}
       </div>
 

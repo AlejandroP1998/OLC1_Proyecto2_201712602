@@ -18,26 +18,6 @@ export class Table implements Instruction{
     this.column = column;
   }
 
-  insertRow(rowData: any[]) {
-    // Implementar la lógica para insertar una fila en la tabla.
-  }
-
-  select(columns: string[], condition?: string) {
-    // Implementar la lógica para seleccionar datos de la tabla.
-  }
-
-  update(column: string, newValue: any, condition: string) {
-    // Implementar la lógica para actualizar datos en la tabla.
-  }
-
-  truncate() {
-    // Implementar la lógica para truncar la tabla (eliminar todos los datos).
-  }
-
-  delete(condition: string) {
-    // Implementar la lógica para eliminar filas que cumplan con una condición.
-  }
-
   getValue(tree: Tree, table: Environment): ReturnType {
     return new ReturnType(type.INT, undefined);
   }
@@ -57,19 +37,20 @@ export class Table implements Instruction{
       }
       
     }
-    //tree.updateConsole(`se creo la tabla ${this.name}`);
+    tree.updateConsole(`se creo la tabla ${this.name}`);
 
   }
 
   getAST(): Node {
 
-    let node: Node = new Node(`${this.name}`);
+    let node: Node = new Node("Crear tabla");
+    let n1:Node = new Node(`${this.name}`);
     let insTrue: Node = new Node("Columns");
     for (let item of this.instructions) {
       insTrue.addChildsNode(item.getAST());
     }
-
-    node.addChildsNode(insTrue);
+    node.addChildsNode(n1);
+    n1.addChildsNode(insTrue);
 
     return node;
 

@@ -32,24 +32,39 @@
     import { For } from './instructions/For.js';
     //funciones
     //metodos
-    //DDL y DML
+    //DDL
     import { Table } from './instructions/Table.js'
-
+    import { AlterTable } from './instructions/AlterTable.js'
+    import { DropTable } from './instructions/DropTable.js'
+    // Errores
+    import fs from 'fs';
 %}
 
 %{
 
     // Variables definition and functions
 
-    let errors, globals, db = [];
+    let globals, db = [];
 
-    export const clean_errors = () => {
-        errors = [];
+    const nombreArchivo = 'erroresLexicos.txt';
+
+    export const clean = () => {
+        try {
+            fs.writeFile(nombreArchivo, mensaje, (err) => { });
+        } catch (error) {}
         globals = [];
+        db = [];
+        mensaje = "";
     }
 
 
-    let a,b,c,d,condicion, incremento;
+    let a,b,c,d,condicion, incremento, mensaje;
+
+    function Errores(messages) {
+        if(messages===undefined){}else{
+        mensaje += messages + '\n'
+        }
+    }
 
     function parseDate(dateString) {
         const [year, month, day] = dateString.split('-').map(Number);
@@ -60,7 +75,6 @@
 %}
 
 /*------------------------ Lexical Definition ------------------------*/
-
 %lex 
 %options case-insensitive
 
@@ -205,7 +219,7 @@
 
 <<EOF>>                     return 'EOF';
 
-.                           { console.log(`Lexical error ${yytext} in [${yylloc.first_line}, ${yylloc.first_column}]`); }
+.                           { Errores(`Lexical error -> ${yytext} in [${yylloc.first_line}, ${yylloc.first_column}]`); }
 
 /lex
 
@@ -241,13 +255,13 @@
 
     instruction : 
         reglas                                                      { $$ = $1; }
-        | error tk_semicolon                                        { errors.push(`Sintactic error ${yytext} in [${this._$.first_line}, ${this._$.first_column}]`); $$ = null; }
+        | error tk_semicolon                                        { Errores(`Sintactic error -> ${yytext} in [${this._$.first_line}, ${this._$.first_column}]`); $$ = null; }
     ;
 
 
-    encapsular : 
-        res_begin funcionesNativas res_end tk_semicolon                 { $$ = $2; }
-    ;
+    /* encapsular : 
+        res_begin reglas res_end tk_semicolon                 { $$ = $2; }
+    ; */
 
     reglas : 
         funcionesNativas                                            { $$ = $1; }
@@ -255,11 +269,13 @@
         | asignacion tk_semicolon                                   { $$ = $1; }
         | sentenciasGenerales                                       { $$ = $1; }
         | methodsDDL                                                { $$ = $1; }
+        | methodsDML                                                { $$ = $1; }
     ;
-
+// DATA DEFINITION LENGUAGE
     methodsDDL :
-        createDDL                                                   { $$ = $1; db.push($1); /* console.log("db crear tabla",db); */ }
-        | alterDDL                                                  { $$ = $1; /* console.log("db modificar tabla",db); */}
+        createDDL                                                   { $$ = $1; db.push($1); }
+        | alterDDL                                                  { $$ = $1; }
+        | dropDDL                                                   { $$ = $1; }
     ;
 // CREAR TABLA
     createDDL :
@@ -304,10 +320,10 @@
             }
         }
     ;
-// MODIFICAR TABLA
 
+// MODIFICAR TABLA
     alterDDL :
-        res_alter res_table expression alterations tk_semicolon     { $$ = db.find(vari => vari.name === d.name);  }
+        res_alter res_table expression alterations tk_semicolon     { $$ = $4; }
     ;
 
     alterations :
@@ -316,53 +332,71 @@
         | renameTable                                               { $$ = $1; }
         | renameColumn                                              { $$ = $1; }
     ;
-
+// AÑADIR UNA COLUMNA A UNA TABLA
     addColumn :
         res_add column
         {
             if(db.some(vari => vari.name === d.name)){
                 let a = db.find(vari => vari.name === d.name);
                 a.instructions.push($2);
-                $$ = a;
+                $$ = new AlterTable(d,`Se añadio la columna ${$2.id} a ${d.name}`,@1.first_line,@1.first_column);
             }
         }
     ;
-
+// ELIMINAR UNA COLUMNA DE UNA TABLA
     dropColumn :
         res_drop res_column expression
         {
             if(db.some(vari => vari.name === d.name)){
                 let a = db.find(vari => vari.name === d.name);
                 const index = a.instructions.findIndex(objeto => objeto.id === $3.id);
+                const nombre = a.instructions.find(objeto => objeto.id === $3.id);
                 a.instructions.splice(index,1);
-                $$ = a;
+                $$ = new AlterTable(d,`Se elimino la columna ${nombre.id} de ${d.name}`,@1.first_line,@1.first_column);
             }
         }
     ;
-
+// RENOMBRAR UNA TABLA
     renameTable :
         res_rename res_to expression
         {
             if(db.some(vari => vari.name === d.name)){
                 let a = db.find(vari => vari.name === d.name);
+                const name = a.name
                 a.name = $3.id;
-                $$ = a;
+                $$ = new AlterTable(d,`Se cambio el nombre ${name} a ${a.name}`,@1.first_line,@1.first_column);
             }
         }
     ;
-
+// RENOMBRAR UNA COLUMNA DE UNA TABLA
     renameColumn :
         res_rename res_column expression res_to expression
         {
             if(db.some(vari => vari.name === d.name)){
                 let a = db.find(vari => vari.name === d.name);
                 const index = a.instructions.findIndex(objeto => objeto.id === $3.id);
+                b = a.instructions[index].id;
                 a.instructions[index].id = $5.id;
-                $$ = a;
+                $$ = new AlterTable(d,`Se cambio el nombre de la columna ${b} a ${$5.id}`,@1.first_line,@1.first_column);
             }
         }
     ;
 
+// ELIMINAR TABLA
+    dropDDL :
+        res_drop res_table expression tk_semicolon
+        {
+            const nombre = db.find(vari => vari.name === d.name);
+            if(db.some(vari => vari.name === d.name)){
+                const index = db.findIndex(vari => vari.name === d.name);
+                db.splice(index,1);
+            }
+            $$ = new DropTable(nombre.name,@1.first_line,@1.first_column);
+        }
+    ;
+
+
+// DATA MANIPULATION LANGUAGE
     methodsDML :
         insertDML
         | selectDML
@@ -370,7 +404,30 @@
         | truncateDML
         | deleteDML
     ;
+//INSERTAR
+    insertDML :
+        res_insert res_into expression tk_par_left parametros tk_par_right res_values tk_par_left parametros tk_par_right tk_semicolon
+        {
+            
+            $$ = $3;
+        }
+    ;
+// PARAMETROS
+    parametros :
+        parametros expression    
+        {
+            $2.id ? a = $2.id : a = $2.value
+            $1.push(a); $$ = $1; 
+        }
+        | expression             
+        { 
+            $1.id ? a = $1.id : a = $1.value
+            $$ = $1 === null ? [] : [$1]; 
+        }
+    ;
 
+
+// SENTENCIAS CONDICIONALES Y CICLOS
     sentenciasGenerales :
         if                          { $$ = $1; }
         | case                      { $$ = $1; }
@@ -378,7 +435,7 @@
         | for                       { $$ = $1; }
                    
     ;
-
+// CONDICIONALES
     if :
         res_if expression res_then res_begin instructions res_end tk_semicolon 
             {
@@ -420,6 +477,7 @@
         }
     ;
 
+// CICLOS
     while :
         res_while expression res_begin instructions res_end tk_semicolon 
         {
@@ -437,23 +495,23 @@
         }
     ;
 
+
+// FUNCIONES
     funciones :
         res_create res_function IDENTIFIER tk_par_left parametrosEntrada tk_par_right
     ;
 
+// METODOS
     metodos :
         res_create res_procedure IDENTIFIER parametrosEntrada res_as encapsular
     ;
-
+// LLAMADAS
     llamadas :
         res_select IDENTIFIER tk_par_left parametros tk_par_right
         | res_set tk_arroba IDENTIFIER tk_eq IDENTIFIER tk_par_left parametros tk_par_right
     ;
-
-    parametros :
-    ;
     
-
+// DECLARACION DE VARIABLES GLOBALES
     declaraciones :
         declaraciones tk_coma declaracion                           { $1.push($3); $$ = $1; }
         | declaracion                                               { $$ = $1 === null ? [] : [$1]; }
@@ -463,7 +521,7 @@
         tk_arroba expression tipos                                  { globals.push($2); $$ = $2;}
         | tk_arroba expression tipos res_default expression         { a = $2; a.value = $5;  globals.push(a); /* console.log("globals -> ",globals,"a -> ",a); */ $$ = a;}
     ;
-
+// ASIGNACION DE VALORES A VARIABLES GLOBALES
     asignacion :
         res_set tk_arroba expression tk_assign expression           
         {
@@ -480,6 +538,8 @@
         }
     ;
 
+
+// FUNCIONES NATIVAS DEL LENGUAJE
     funcionesNativas:
         print tk_semicolon                                          { $$ = $1; }
         | lower tk_semicolon                                        { $$ = $1; }
@@ -489,7 +549,7 @@
         | truncate tk_semicolon                                     { $$ = $1; }
         | typeof tk_semicolon                                       { $$ = $1; }
     ;
-
+// IMPRIMIR
     print : 
         res_print expression                                        
         {
@@ -497,7 +557,7 @@
             $$ = new Print(a, @1.first_line, @1.first_column); 
         }
     ;
-
+// TRANSFORMAR A MINUSCULAS
     lower :
         res_select res_lower tk_par_left expression tk_par_right       
         { 
@@ -505,7 +565,7 @@
             $$ = new Lower(a, @1.first_line, @1.first_column); 
         }
     ;
-
+// TRANSFORMAR A MAYUSCULAS
     upper :
         res_select res_upper tk_par_left expression tk_par_right       
         {
@@ -513,7 +573,7 @@
             $$ = new Upper(a, @1.first_line, @1.first_column); 
         }
     ;
-
+// REDONDEAR UN NUMERO
     round :
         res_select res_round tk_par_left expression tk_coma INTEGER tk_par_right    
         { 
@@ -522,7 +582,7 @@
             $$ = new Round(a,b, @1.first_line, @1.first_column); 
         }
     ;
-
+// TAMAÑO DE LA CADENA DE TEXTO
     length :
         res_select res_length tk_par_left expression tk_par_right   
         {
@@ -530,7 +590,7 @@
             $$ = new Len(a, @1.first_line, @1.first_column); 
         }
     ;
-
+// REDUCIR UN NUMERO
     truncate :
         res_select res_truncate tk_par_left expression tk_coma INTEGER tk_par_right
         {
@@ -539,7 +599,7 @@
             $$ = new Truncate(a,b, @1.first_line, @1.first_column); 
         }
     ;
-
+// CONOCER EL TIPO DE DATO DE UN ELEMENTO
     typeof :
         res_select res_typeof tk_par_left expression tk_par_right   
         { 
@@ -547,7 +607,7 @@
             $$ = new Typeof(a, @1.first_line, @1.first_column); 
         }
     ;
-
+// TIPOS DE DATOS
     tipos :
         res_int                                                     { $$ = $1; }
         | res_double                                                { $$ = $1; }
@@ -557,7 +617,7 @@
         | res_null                                                  { $$ = $1; }
     ;
 
-        
+// EXPRESIONES GENERALES (TIPOS DE DATOS, OPERACIONES ARITMETICAS Y RELACIONALES)
     expression : 
         expression tk_plus expression                          
         { 
