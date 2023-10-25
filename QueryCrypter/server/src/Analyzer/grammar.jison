@@ -262,7 +262,7 @@
     /* encapsular : 
         res_begin reglas res_end tk_semicolon                 { $$ = $2; }
     ; */
-
+// REGLAS
     reglas : 
         funcionesNativas                                            { $$ = $1; }
         | res_declare declaraciones tk_semicolon                    { $$ = new Declarations($2,@1.first_line,@1.first_column); }
@@ -398,34 +398,63 @@
 
 // DATA MANIPULATION LANGUAGE
     methodsDML :
-        insertDML
-        | selectDML
-        | updateDML
-        | truncateDML
-        | deleteDML
+        insertDML                                                   { $$ = $1; }
+/*         
+        | selectDML                                                 { $$ = $1; }
+        | updateDML                                                 { $$ = $1; }
+        | truncateDML                                               { $$ = $1; }
+        | deleteDML                                                 { $$ = $1; }
+*/
     ;
 //INSERTAR
     insertDML :
-        res_insert res_into expression tk_par_left parametros tk_par_right res_values tk_par_left parametros tk_par_right tk_semicolon
+        res_insert res_into expression tk_par_left parametrosT tk_par_right res_values tk_par_left parametrosV tk_par_right tk_semicolon
         {
-            
-            $$ = $3;
+            let ms="";
+            if(db.some(vari => vari.name === d.name)){
+                let a = db.find(vari => vari.name === d.name);
+                let contador = 0;
+                let i = 0;
+                while(contador < $5.length){
+                    let item = a.instructions.find(vari => vari.id === $5[i])
+                    if(item){
+                        ms += `En la tabla ${a.name} se actualizo ${item.id} con el valor de ${$9[i]}\n`;
+                        item.value = $9[i]
+                        i++
+                        contador ++
+                    }
+                }
+            }
+
+            $$ = new AlterTable(d,ms,@1.first_line,@1.first_column);
         }
     ;
 // PARAMETROS
-    parametros :
-        parametros expression    
+    parametrosT :
+        parametrosT tk_coma expression    
         {
-            $2.id ? a = $2.id : a = $2.value
+            $3.id ? a = $3.id : a = $3.value
             $1.push(a); $$ = $1; 
         }
         | expression             
         { 
             $1.id ? a = $1.id : a = $1.value
-            $$ = $1 === null ? [] : [$1]; 
+            $$ = a === null ? [] : [a]; 
         }
     ;
 
+    parametrosV :
+        parametrosV tk_coma expression    
+        {
+            $3.id ? a = $3.id.value.value : a = $3.value
+            $1.push(a); $$ = $1; 
+        }
+        | expression             
+        { 
+            $1.id ? a = $1.id.value.value : a = $1.value
+            $$ = a === null ? [] : [a]; 
+        }
+    ;
 
 // SENTENCIAS CONDICIONALES Y CICLOS
     sentenciasGenerales :
@@ -619,6 +648,7 @@
 
 // EXPRESIONES GENERALES (TIPOS DE DATOS, OPERACIONES ARITMETICAS Y RELACIONALES)
     expression : 
+    // ARITMETICAS
         expression tk_plus expression                          
         { 
             $1.id ? a = $1.value : a = $1;
@@ -649,6 +679,7 @@
             $3.id ? b = $3.value : b = $3;
             $$ = new Arithmetic(a, b, arithmeticOperator.MOD, @1.first_line, @1.first_column); 
         }
+    // RELACIONALES
         | expression tk_eq expression                                 
         {   
             $1.id ? a = $1.value : a = $1;
@@ -685,18 +716,20 @@
             $3.id ? b = $3.value : b = $3; 
             $$ = new Relational(a, b, relationalOperator.GT, @1.first_line, @1.first_column); 
         }
+    // DATOS
         | IDENTIFIER                                                
         {
-            if(globals.some(vari => vari.id === $1)){
-                a = globals.find(vari => vari.id === $1);
-                c = a;
-                $$ = a;
-            }else if(db.some(vari => vari.name === $1)){
+            if(db.some(vari => vari.name === $1)){
                 d = db.find(vari => vari.name === $1);
                 //console.log("busco -> ",d);
                 $$ = d;
             }
-            else{
+
+            if(globals.some(vari => vari.id === $1)){
+                a = globals.find(vari => vari.id === $1);
+                c = a;
+                $$ = a;
+            }else{
                 $$ = new Identifier($1, @1.first_line, @1.first_column); 
             }
         }
