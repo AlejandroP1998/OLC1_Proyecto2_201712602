@@ -27,9 +27,9 @@ export class While implements Instruction {
     this.row = row;
     this.column = column;
     this.condicion = condicion;
-    //console.log("🚀 ~ file: While.ts:29 ~ While ~ constructor ~ this.condicion:", this.condicion);
+    //console.log("this.condicion:", this.condicion);
     this.incremento = incremento;
-    //console.log("🚀 ~ file: While.ts:31 ~ While ~ constructor ~ this.incremento:", this.incremento);
+    //console.log("this.incremento:", this.incremento);
 
 
   }
@@ -117,7 +117,8 @@ export class While implements Instruction {
               }
 
             }
-            break; case ">=":
+            break; 
+          case ">=":
             while (contador >= comparador) {
               if (operadorI === "+") {
                 contador = contador + incremento;

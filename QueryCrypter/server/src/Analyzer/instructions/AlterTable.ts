@@ -36,7 +36,7 @@ export class AlterTable implements Instruction {
 
   getAST(): Node {
 
-    let node: Node = new Node("Modificar tabla");
+    let node: Node = new Node("Modificar");
     let n1: Node = new Node(`${this.tabla.name}`);
     node.addChildsNode(n1);
     return node;

@@ -9,11 +9,13 @@ import { Node } from "../abstract/Node.js";
 export class Table implements Instruction{
   public name: string;
   public instructions: Array<Instruction>;
+  public rows : Array<any>;
   public row: number;
   public column: number;
   constructor(name: string, instructions: Array<Instruction>, row: number, column: number) {
     this.name = name;
     this.instructions = instructions;
+    this.rows = []
     this.row = row;
     this.column = column;
   }
@@ -43,7 +45,7 @@ export class Table implements Instruction{
 
   getAST(): Node {
 
-    let node: Node = new Node("Crear tabla");
+    let node: Node = new Node("Create");
     let n1:Node = new Node(`${this.name}`);
     let insTrue: Node = new Node("Columns");
     for (let item of this.instructions) {

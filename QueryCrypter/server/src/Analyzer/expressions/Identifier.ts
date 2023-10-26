@@ -38,7 +38,7 @@ export class Identifier implements Instruction {
     }
 
     interpret(tree: Tree, table: Environment) {
-        
+
     }
 
 
